@@ -72,6 +72,7 @@ if args.gpu is not None:
 normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406],
                                  std=[0.229, 0.224, 0.225])
 transform=transforms.Compose([
+    transforms.Resize(256),
     transforms.CenterCrop(224),
     transforms.ToTensor(),
     normalize,
@@ -298,7 +299,6 @@ else:
         best_prec1 = max(prec1, best_prec1)
         save_checkpoint({
             'epoch': epoch + 1,
-            'arch': args.arch,
             'state_dict': model.state_dict(),
             'best_prec1': best_prec1,
             'optimizer' : optimizer.state_dict(),
