@@ -43,7 +43,7 @@ for i in range(n_images):
 epasana_images = torch.cat(epasana_images, 0)
 imagenet_images = torch.cat(imagenet_images, 0)
     
-checkpoint = torch.load(f'/m/nbe/work/lehtini6/data/models/vgg11_first_imagenet_then_epasana-10kwords_noise.pth.tar')
+checkpoint = torch.load(f'/m/nbe/work/lehtini6/viswordrec-baseline/model_best.pth.tar')
 model = network.VGG11.from_checkpoint(checkpoint, freeze=True)
 
 epasana_outputs = model.get_layer_activations(
@@ -52,9 +52,15 @@ epasana_outputs = model.get_layer_activations(
     classifier_layers=[1,4,6]
 )
 
-layer_activity = [output for output in epasana_outputs]
-for fmap in layer_activity:
-    print(fmap.shape)
+imagenet_outputs = model.get_layer_activations(
+    imagenet_images,
+    feature_layers=[2,6,13,20,27],
+    classifier_layers=[1,4,6]
+)
+
+
+epasana_layer_activity = [output for output in epasana_outputs]
+imagenet_layer_activity = [output for output in imagenet_outputs]
 
 layer_names = [
     'conv1_relu',
@@ -67,8 +73,16 @@ layer_names = [
     'word_relu',
 ]
 
-mean_activity = np.array([np.square(a.reshape(n_images, -1)).mean(axis=1)
-                          for a in layer_activity])
+for fmap in epasana_layer_activity:
+    print(fmap.shape)
 
-with open(f'{data_path}/model_layer_activity.pkl', 'wb') as f:
-    pickle.dump(dict(layer_names=layer_names, mean_activity=mean_activity), f)
+#epasana_mean_activity = np.array([np.square(a.reshape(n_images, -1)).mean(axis=1)
+#                          for a in epasana_layer_activity])
+
+#imagenet_mean_activity = np.array([np.square(a.reshape(n_images, -1)).mean(axis=1) for a in imagenet_layer_activity])
+
+with open(f'{data_path}/epasana_model_layer_activity.pkl', 'wb') as f:
+    pickle.dump(dict(layer_names=layer_names, mean_activity=epasana_layer_activity), f)
+
+with open(f'{data_path}/imagenet_model_layer_activity.pkl', 'wb') as f:
+    pickle.dump(dict(layer_names=layer_names, mean_activity=imagenet_layer_activity), f)

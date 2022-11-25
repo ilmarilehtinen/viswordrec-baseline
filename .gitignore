@@ -5,3 +5,10 @@ training_datasets/render_stimulus/debug
 training_datasets/render_stimulus/target
 data
 figures
+checkpoint.pth.tar
+get_activations.sh
+model_best.pth.tar
+predictions.csv
+train.sh
+vgg11_first_imagenet_then_imagenet-1k_epasana-1kwords_noise.log
+vgg11_first_imagenet_then_imagenet-1k_epasana-1kwords_noise.out

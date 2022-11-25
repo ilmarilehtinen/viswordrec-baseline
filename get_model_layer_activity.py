@@ -7,18 +7,18 @@ from torchvision import transforms
 import numpy as np
 import pickle
 import pandas as pd
-import mkl
-mkl.set_num_threads(4)
+#import mkl
+#mkl.set_num_threads(4)
 from PIL import Image
 from tqdm import tqdm
 
 import network
 import dataloader
 
-data_path = './data'
+data_path = '/tmp'
 
-classes = dataloader.WebDataset(f'{data_path}/datasets/epasana-10kwords').classes
-classes.append(pd.Series(['noise'], index=[10000]))
+classes = dataloader.WebDataset('/m/nbe/scratch/reading_models/datasets/epasana-1kwords').classes
+classes.append(pd.Series(['noise'], index=[1000]))
 
 # In order to get word2vec vectors, the KORAANI class was replaced with
 # KORAANIN. Switch this back, otherwise, this word will be erroneously flagged
@@ -27,7 +27,7 @@ classes[classes == 'KORAANIN'] = 'KORAANI'
 
 # Load the TIFF images presented in the MEG experiment and apply the
 # ImageNet preprocessing transformation to them.
-stimuli = pd.read_csv('stimuli.csv')
+stimuli = pd.read_csv('/tmp/stimuli.csv')
 preproc = transforms.Compose([
     transforms.ToTensor(),
     transforms.Normalize(mean=[0.485, 0.456, 0.406],
@@ -35,7 +35,7 @@ preproc = transforms.Compose([
 ])
 images = []
 for fname in tqdm(stimuli['tif_file'], desc='Reading images'):
-    with Image.open(f'{data_path}/stimulus_images/{fname}') as orig:
+    with Image.open(f'/tmp/stimulus_images/{fname}') as orig:
         image = Image.new('RGB', (224, 224), '#696969')
         image.paste(orig, (12, 62))
         image = preproc(image).unsqueeze(0)
@@ -45,7 +45,7 @@ images = torch.cat(images, 0)
 # Load the model and feed through the images. Make sure to feed the images
 # through as a single batch, because I don't trust the BatchNormalization2d
 # layers to behave predictably otherwise.
-checkpoint = torch.load(f'{data_path}/models/vgg11_first_imagenet_then_epasana-10kwords_noise.pth.tar', map_location='cpu')
+checkpoint = torch.load('model_best.pth.tar', map_location='cpu')
 model = network.VGG11.from_checkpoint(checkpoint, freeze=True)
 
 layer_outputs = model.get_layer_activations(
@@ -56,9 +56,9 @@ layer_outputs = model.get_layer_activations(
 
 layer_activity = []
 for output in layer_outputs:
-    if output.shape[-1] == 10001:
+    if output.shape[-1] == 2001:
         print('Removing nontext class')
-        output = np.hstack((output[:, :10000], output[:, 10001:]))
+        output = np.hstack((output[:, :2000], output[:, 2001:]))
         print('New output shape:', output.shape)
     layer_activity.append(output)
 
@@ -76,7 +76,7 @@ layer_names = [
 mean_activity = np.array([np.square(a.reshape(len(stimuli), -1)).mean(axis=1)
                           for a in layer_activity])
 
-with open(f'{data_path}/model_layer_activity.pkl', 'wb') as f:
+with open('../data/models/stimuli_model_layer_activity.pkl', 'wb') as f:
     pickle.dump(dict(layer_names=layer_names, mean_activity=mean_activity), f)
 
 # Translate output of the model to text predictions
